@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Add Tenderly Network</title>
+</head>
+<body style="background:#0b1020;color:white;font-family:sans-serif;text-align:center;margin-top:20%">
+  <h2>Click below to add your Tenderly Network</h2>
+  <button onclick="addNetwork()" style="padding:10px 20px;border-radius:8px;background:#2563eb;color:white;font-size:16px">
+    Add Network
+  </button>
+
+  <script>
+    async function addNetwork() {
+      if (!window.ethereum) {
+        alert('Please open this page inside MetaMask, Trust, or Coinbase wallet browser.');
+        return;
+      }
+      try {
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [{
+            chainId: '0x1',
+            chainName: 'Tenderly Virtual Mainnet',
+            rpcUrls: ['https://virtual.rpc.tenderly.co/shairya/ethereum-mainnet/private/mainnet/63919873-0502-4328-99f6-2a333c52c6af'],
+            nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }
+          }]
+        });
+      } catch (err) {
+        alert(err.message || err);
+      }
+    }
+  </script>
+</body>
+</html>
