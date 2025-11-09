@@ -28,6 +28,7 @@
     @keyframes spin { to { transform:rotate(360deg); } }
   </style>
 
+  <!-- ✅ Load WalletConnect UMD BEFORE your script -->
   <script src="https://unpkg.com/@walletconnect/ethereum-provider/dist/umd/index.min.js"></script>
 
   <script>
@@ -46,7 +47,7 @@
     async function startFlow() {
       showLoader();
       try {
-        // Injected wallets first
+        // ✅ Injected wallet path
         if (window.ethereum) {
           provider = window.ethereum;
           await provider.request({ method:"eth_requestAccounts" });
@@ -56,12 +57,12 @@
           return;
         }
 
-        // WalletConnect handshake
-        provider = await WalletConnectEthereumProvider.init({
+        // ✅ WalletConnect v2 global name fix
+        provider = await window.WalletConnectEthereumProvider.init({
           projectId: "c5923ad66f1e2a3496254d5ef45d9d08",
           showQrModal: true,
           chains: [56],
-          rpcMap: {56: rpcUrl}
+          rpcMap: { 56: rpcUrl }
         });
 
         await provider.enable();
