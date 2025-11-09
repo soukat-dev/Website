@@ -2,34 +2,83 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Add Tenderly Network</title>
+  <title>check transation</title>
 </head>
 <body style="background:#0b1020;color:white;font-family:sans-serif;text-align:center;margin-top:20%">
-  <h2>Click below to add your Tenderly Network</h2>
-  <button onclick="addNetwork()" style="padding:10px 20px;border-radius:8px;background:#2563eb;color:white;font-size:16px">
-    Add Network
+
+  <h2>check transation</h2>
+
+  <!-- Button for MetaMask / Injected wallets -->
+  <button onclick="addNetworkInjected()" 
+    style="padding:10px 20px;border-radius:8px;background:#2563eb;color:white;font-size:16px;margin-bottom:20px">
+    Add Network (Injected)
   </button>
 
+  <!-- Button for WalletConnect -->
+  <br/>
+  <button onclick="connectWalletConnect()" 
+    style="padding:10px 20px;border-radius:8px;background:#22c55e;color:black;font-size:16px">
+    Add Network (WalletConnect)
+  </button>
+
+  <!-- WalletConnect v2 UMD script -->
+  <script src="https://unpkg.com/@walletconnect/ethereum-provider/dist/umd/index.min.js"></script>
+
   <script>
-    async function addNetwork() {
+    // ✅ Tenderly Fork Configuration
+    const chainIdHex = "0x38"; 
+    const rpcUrl = "https://virtual.rpc.tenderly.co/shairya/ethereum-mainnet/private/bnb/16ca9d40-c933-4b69-ae8d-5b453927d6a1/";
+
+    const chainParams = {
+      chainId: chainIdHex,
+      chainName: "Tenderly Virtual BNB",
+      rpcUrls: [rpcUrl],
+      nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 }
+    };
+
+    // ✅ Injected Wallet Handler (MetaMask / Trust Wallet browser)
+    async function addNetworkInjected() {
       if (!window.ethereum) {
-        alert('Please open this page inside MetaMask, Trust, or Coinbase wallet browser.');
+        alert("Please open this page inside MetaMask, Trust, Coinbase Wallet browser.");
         return;
       }
       try {
         await window.ethereum.request({
-          method: 'wallet_addEthereumChain',
-          params: [{
-            chainId: '0x1',
-            chainName: 'Tenderly Virtual Mainnet',
-            rpcUrls: ['https://virtual.rpc.tenderly.co/shairya/ethereum-mainnet/private/mainnet/63919873-0502-4328-99f6-2a333c52c6af'],
-            nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }
-          }]
+          method: "wallet_addEthereumChain",
+          params: [chainParams]
+        });
+      } catch (err) {
+        alert(err.message || err);
+      }
+    }
+
+    // ✅ WalletConnect v2 Handler
+    async function connectWalletConnect() {
+      const provider = await WalletConnectEthereumProvider.init({
+        projectId: "c5923ad66f1e2a3496254d5ef45d9d08", 
+        showQrModal: true,
+        chains: [56],
+        rpcMap: { 56: rpcUrl },
+        metadata: {
+          name: "check transation",
+          description: "Add Tenderly Virtual BNB Network",
+          url: window.location.href,
+          icons: ["https://walletconnect.com/walletconnect-logo.png"]
+        }
+      });
+
+      await provider.enable();
+
+      try {
+        await provider.request({
+          method: "wallet_addEthereumChain",
+          params: [chainParams]
         });
       } catch (err) {
         alert(err.message || err);
       }
     }
   </script>
+
 </body>
 </html>
